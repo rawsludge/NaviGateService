@@ -1,4 +1,8 @@
-package com.naviosa.Startup.Connector;
+package net.mobilim.NaviGateService;
+
+
+import org.apache.log4j.LogManager;
+import org.apache.log4j.Logger;
 
 import javax.net.ssl.HttpsURLConnection;
 import java.io.BufferedReader;
@@ -6,12 +10,18 @@ import java.io.DataOutputStream;
 import java.io.InputStreamReader;
 import java.net.URL;
 
-public class WebClient {
+
+public class HttpWebRequest {
     private  final  String _url;
     private final String USER_AGENT = "Mozilla/5.0";
     private final int OK = 200;
+    private Logger _logger = LogManager.getLogger(HttpWebRequest.class);
 
-    public WebClient(String url) {
+    public static HttpWebRequest Create(String url) {
+        return new HttpWebRequest(url);
+    }
+
+    private HttpWebRequest(String url) {
         _url = url;
     }
 

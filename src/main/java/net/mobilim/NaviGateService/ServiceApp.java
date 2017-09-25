@@ -1,22 +1,26 @@
-package com.naviosa.Startup;
+package net.mobilim.NaviGateService;
 
+import org.apache.log4j.LogManager;
+import org.apache.log4j.Logger;
 import org.springframework.boot.Banner;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.context.ConfigurableApplicationContext;
 
 @SpringBootApplication
-public class Application {
+public class ServiceApp {
+    private Logger _logger = LogManager.getLogger(ServiceApp.class);
+
     public static void main(String[] args) {
         ConfigurableApplicationContext context = new SpringApplicationBuilder()
-                .sources(Application.class)
+                .sources(ServiceApp.class)
                 .bannerMode(Banner.Mode.OFF)
                 .run(args);
-        Application app = context.getBean(Application.class);
+        ServiceApp app = context.getBean(ServiceApp.class);
         app.start();
     }
 
     private void start() {
-        System.out.println("Started");
+        _logger.info("Application started");
     }
 }

@@ -46,6 +46,7 @@ public class ServiceApp {
         product.setEmbarkPort(port);
         port = new Port("FLL", "Ft. Lauderdale, Florida");
         product.setDebarkPort(port);
+        product.setSailingID("K902");
         productRepository.save(product);
     }
 }

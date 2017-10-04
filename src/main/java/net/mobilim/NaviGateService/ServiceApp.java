@@ -1,53 +1,43 @@
 package net.mobilim.NaviGateService;
 
-import com.sun.tools.javah.Util;
-import jdk.nashorn.internal.parser.JSONParser;
-import net.mobilim.NaviGateData.Entities.Destination;
-import net.mobilim.NaviGateData.Entities.Port;
-import net.mobilim.NaviGateData.Entities.Product;
-import net.mobilim.NaviGateData.Entities.Ship;
-import net.mobilim.NaviGateData.Repositories.DestinationRepository;
-import net.mobilim.NaviGateData.Repositories.PortRepository;
-import net.mobilim.NaviGateData.Repositories.ProductRepository;
-import net.mobilim.NaviGateData.Repositories.ShipRepository;
+import net.mobilim.Repositories.Entities.Destination;
+import net.mobilim.Repositories.Entities.Port;
+import net.mobilim.Repositories.Entities.Product;
+import net.mobilim.Repositories.Entities.Ship;
+import net.mobilim.Repositories.Repositories.DestinationRepository;
+import net.mobilim.Repositories.Repositories.PortRepository;
+import net.mobilim.Repositories.Repositories.ProductRepository;
+import net.mobilim.Repositories.Repositories.ShipRepository;
 import net.mobilim.NaviGateService.Helpers.XmlDefinitions;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
-import org.json.JSONArray;
 import org.json.JSONObject;
 import org.json.XML;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.Banner;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.context.ConfigurableApplicationContext;
-import org.springframework.context.annotation.ComponentScan;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
-import org.springframework.data.web.JsonPath;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
 
-@SpringBootApplication
+
 @EntityScan("net.mobilim.NaviGateData.Entities")
 @EnableJpaRepositories("net.mobilim.NaviGateData.Repositories")
-@ComponentScan("net.mobilim.NaviGateData.Repositories")
 public class ServiceApp {
-    private Logger _logger = LogManager.getLogger(ServiceApp.class);
+    private final Logger logger = LogManager.getLogger(ServiceApp.class);
+    private ConfigurableApplicationContext context;
 
-    @Value("${website.url}")
-    private String websiteUrl;
-
-    public static void main(String[] args) {
-        ConfigurableApplicationContext context = new SpringApplicationBuilder()
+    public void main(String[] args) {
+        this.context = new SpringApplicationBuilder()
                 .sources(ServiceApp.class)
                 .bannerMode(Banner.Mode.OFF)
                 .run(args);
-        ServiceApp app = context.getBean(ServiceApp.class);
+        ServiceApp app = this.context.getBean(ServiceApp.class);
         app.start(args);
     }
 
@@ -64,7 +54,11 @@ public class ServiceApp {
     private DestinationRepository destinationRepository;
 
     private void start(String[] args) {
-        _logger.info(String.format("Application started.", args));
+        StringBuilder sb = new StringBuilder();
+        for(String s : args){
+            sb.append(s).append(" ");
+        }
+        logger.info(String.format("Application started. Args:%s", sb.toString()));
 
         Date date = new Date();
         SimpleDateFormat dateFormat = new SimpleDateFormat("MMddyyyy");
@@ -85,20 +79,15 @@ public class ServiceApp {
         try {
             response = webRequest.Post(xmlPostData);
         } catch (Exception e) {
-            _logger.error(e);
+            logger.error(e);
             return;
         }
         JSONObject jsonObject = XML.toJSONObject(response.toString());
-        JSONArray jsonArray = jsonObject.getJSONObject("CruiseLineResponse").getJSONArray("ProductAvailabilityResponse");
 
         for ( Object object : jsonArray ) {
             if( object instanceof JSONObject) {
-                _logger.info(object);
+                logger.info(object);
                 JSONObject productJsonObject = (JSONObject)object;
-                JSONObject tempObject = productJsonObject.getJSONObject("Destination");
-                String code = tempObject.getString("Code");
-                String name = tempObject.getString("Name");
-                Destination destination = checkDestinationAndSave(code, name);
 
                 tempObject = productJsonObject.getJSONObject("EmbarkPort");
                 code = tempObject.getString("Code");
@@ -138,27 +127,7 @@ public class ServiceApp {
                 product.setLastUpdateDate(date);
                 productRepository.save(product);
             }
-
         }
-        /*
-        Product product = new Product();
-
-        Ship ship = checkShipAndSave("PA", "Losangels");
-        product.setShip(ship);
-
-        Destination dest = checkDestinationAndSave("LA", "Losangels");
-        product.setDestination(dest);
-
-        Port port = checkPortAndSave("FLL", "Ft. Lauderdale, Florida");
-        product.setEmbarkPort(port);
-
-        port = checkPortAndSave("FLL", "Ft. Lauderdale, Florida");
-        product.setDebarkPort(port);
-
-        product.setSailingID("K902");
-        product.setLastUpdateDate(new Date());
-        productRepository.save(product);
-        */
     }
 
     private Ship checkShipAndSave(String code, String name) {

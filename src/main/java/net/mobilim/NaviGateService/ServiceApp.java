@@ -1,36 +1,31 @@
 package net.mobilim.NaviGateService;
 
 
-import net.mobilim.NaviGateService.Helpers.XmlDefinitions;
+import net.mobilim.NaviGateService.Managers.ProductSyncManager;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
-import org.json.JSONObject;
-import org.json.XML;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.Banner;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.context.annotation.ComponentScan;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.Calendar;
-import java.util.Date;
-
-
-@EntityScan("net.mobilim.NaviGateData.Entities")
+@SpringBootApplication
+@ComponentScan("net.mobilim.NaviGateService.Managers")
 @EnableJpaRepositories("net.mobilim.NaviGateData.Repositories")
+@EntityScan("net.mobilim.NaviGateData.Entities")
 public class ServiceApp {
     private final Logger logger = LogManager.getLogger(ServiceApp.class);
-    private ConfigurableApplicationContext context;
+    private static ConfigurableApplicationContext context;
 
-    public void main(String[] args) {
-        this.context = new SpringApplicationBuilder()
+    public static void main(String[] args) {
+        context = new SpringApplicationBuilder()
                 .sources(ServiceApp.class)
                 .bannerMode(Banner.Mode.OFF)
                 .run(args);
-        ServiceApp app = this.context.getBean(ServiceApp.class);
+        ServiceApp app = context.getBean(ServiceApp.class);
         app.start(args);
     }
 
@@ -42,19 +37,11 @@ public class ServiceApp {
         }
         logger.info(String.format("Application started. Args:%s", sb.toString()));
 
-        Date date = new Date();
-        SimpleDateFormat dateFormat = new SimpleDateFormat("MMddyyyy");
-
-        Calendar calendar = Calendar.getInstance();
-        String fromDate = dateFormat.format(date);
-
-        calendar.setTime(date);
-        calendar.add(Calendar.YEAR, 1);
-        date = calendar.getTime();
-
-        String toDate = dateFormat.format(date);
-
-        String xmlPostData = String.format( XmlDefinitions.PRODUCT, fromDate, toDate, "5", "30", "", "");
-
+        ProductSyncManager productSyncManager = context.getBean(ProductSyncManager.class);
+        try {
+            productSyncManager.startSync();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 }

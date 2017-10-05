@@ -12,12 +12,12 @@ import net.mobilim.NaviGateData.Repositories.ShipRepository;
 import net.mobilim.NaviGateService.Helpers.XmlDefinitions;
 import net.mobilim.NaviGateService.HttpWebRequest;
 import net.mobilim.NaviGateService.ServiceApp;
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.json.XML;
-import org.springframework.beans.factory.annotation.Value;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.text.ParseException;
@@ -32,11 +32,12 @@ public class ProductSyncManager {
     private ShipRepository shipRepository = null;
     private DestinationRepository destinationRepository = null;
     private final SimpleDateFormat dateFormatter = new SimpleDateFormat("MMddyyyy");
-    private final Logger logger = LogManager.getLogger(ServiceApp.class);
-    private final Integer MAX_YEAR = 1;
+    private final Logger logger = LoggerFactory.getLogger(ServiceApp.class);
+    private final Integer MAX_YEAR = 5;
 
-    @Value("${website.url}")
-    private String websiteUrl;
+
+    @Autowired
+    private HttpWebRequest httpWebRequest;
 
     public ProductSyncManager(ProductRepository productRepository, PortRepository portRepository, ShipRepository shipRepository, DestinationRepository destinationRepository) {
         this.productRepository = productRepository;
@@ -46,9 +47,9 @@ public class ProductSyncManager {
     }
 
     public void startSync() throws Exception {
-        String response = "";
-        JSONObject jsonObject = null;
-        JSONArray jsonArray = null;
+        String response;
+        JSONObject jsonObject;
+        JSONArray jsonArray;
         Date date = new Date();
         String fromDate = dateFormatter.format(date);
 
@@ -56,23 +57,22 @@ public class ProductSyncManager {
         calendar.setTime(date);
         calendar.add(Calendar.YEAR, MAX_YEAR);
         Date tillDate = calendar.getTime();
-        HttpWebRequest webRequest = HttpWebRequest.Create(websiteUrl);
 
         while (date.compareTo(tillDate) < 0) {
             String xmlPostData = String.format(XmlDefinitions.PRODUCT, fromDate, "", "5", "60", "", "");
             try {
-                response = webRequest.Post(xmlPostData);
+                response = httpWebRequest.Post(xmlPostData);
                 jsonObject = XML.toJSONObject(response.toString());
                 jsonArray = jsonObject.getJSONObject("CruiseLineResponse").getJSONArray("ProductAvailabilityResponse");
             } catch (Exception e) {
-                logger.error(e);
+                logger.error("Error occured while http web posting.", e);
                 throw e;
             }
             for (Object item : jsonArray) {
                 if (!(item instanceof JSONObject)) continue;
 
                 jsonObject = (JSONObject) item;
-                logger.info(item);
+                logger.info(item.toString());
                 Destination destination = prepateDestionation(jsonObject.getJSONObject("Destination"));
                 Port embarkPort = preparePort(jsonObject.getJSONObject("EmbarkPort"));
                 Port debarkPort = preparePort(jsonObject.getJSONObject("DebarkPort"));
@@ -85,7 +85,7 @@ public class ProductSyncManager {
                     sailingDate = dateFormatter.parse(tempJsonObject.get("Date").toString());
                     date = sailingDate;
                 } catch (ParseException e) {
-                    logger.error(e);
+                    logger.error("Error occured while Date field parsing.", e);
                     throw e;
                 }
 
@@ -95,18 +95,18 @@ public class ProductSyncManager {
                 Product product = productRepository.findBySailingID(sailingID);
                 if (product == null) {
                     product = new Product();
-                    product.setDestination(destination);
-                    product.setEmbarkPort(embarkPort);
-                    product.setShip(ship);
-                    product.setDuration(duration);
-                    product.setSailingDate(sailingDate);
-                    product.setMaxOccupancy(maxOccupancy);
-                    product.setDebarkPort(debarkPort);
-                    product.setSailingID(sailingID);
-                    product.setCruiseLineCode("PCL");
-                    product.setLastUpdateDate(new Date());
-                    productRepository.save(product);
                 }
+                product.setDestination(destination);
+                product.setEmbarkPort(embarkPort);
+                product.setShip(ship);
+                product.setDuration(duration);
+                product.setSailingDate(sailingDate);
+                product.setMaxOccupancy(maxOccupancy);
+                product.setDebarkPort(debarkPort);
+                product.setSailingID(sailingID);
+                product.setCruiseLineCode("PCL");
+                product.setLastUpdateDate(new Date());
+                productRepository.save(product);
             }
             calendar.setTime(date);
             calendar.add(Calendar.DATE, 1);

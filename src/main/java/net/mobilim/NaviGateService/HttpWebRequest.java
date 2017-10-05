@@ -1,8 +1,10 @@
 package net.mobilim.NaviGateService;
 
 
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
 
 import javax.net.ssl.HttpsURLConnection;
 import java.io.BufferedReader;
@@ -10,23 +12,21 @@ import java.io.DataOutputStream;
 import java.io.InputStreamReader;
 import java.net.URL;
 
-
+@Component
 public class HttpWebRequest {
     private  final  String _url;
     private final String USER_AGENT = "Mozilla/5.0";
     private final int OK = 200;
-    private Logger _logger = LogManager.getLogger(HttpWebRequest.class);
+    private Logger logger = LoggerFactory.getLogger(HttpWebRequest.class);
 
-    public static HttpWebRequest Create(String url) {
-        return new HttpWebRequest(url);
-    }
-
-    private HttpWebRequest(String url) {
+    public HttpWebRequest(@Value("${website.url}") String url) {
         _url = url;
     }
 
     public String Post(String postData) throws Exception {
+        logger.info("Begin post");
         URL url = new URL(_url);
+        logger.debug("Url is {}", _url);
         HttpsURLConnection con = (HttpsURLConnection) url.openConnection();
         con.setRequestMethod("POST");
         con.setRequestProperty("User-Agent", USER_AGENT);
@@ -38,8 +38,9 @@ public class HttpWebRequest {
             wr.close();
         }
         int responseCode = con.getResponseCode();
+        logger.debug("Http request response code is {}", responseCode);
         if( OK != responseCode) {
-            throw  new Exception( String.format("Web site response error. Response: %d", responseCode));
+            throw  new Exception(String.format("Web site response error. Response: %d", responseCode));
         }
         BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()));
         String inputLine;

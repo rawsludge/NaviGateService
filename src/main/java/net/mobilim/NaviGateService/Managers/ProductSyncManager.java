@@ -39,6 +39,9 @@ public class ProductSyncManager {
     @Autowired
     private HttpWebRequest httpWebRequest;
 
+    @Autowired
+    private  CategorySyncManager categorySyncManager;
+
     public ProductSyncManager(ProductRepository productRepository, PortRepository portRepository, ShipRepository shipRepository, DestinationRepository destinationRepository) {
         this.productRepository = productRepository;
         this.portRepository = portRepository;
@@ -62,8 +65,20 @@ public class ProductSyncManager {
             String xmlPostData = String.format(XmlDefinitions.PRODUCT, fromDate, "", "5", "60", "", "");
             try {
                 response = httpWebRequest.Post(xmlPostData);
-                jsonObject = XML.toJSONObject(response.toString());
-                jsonArray = jsonObject.getJSONObject("CruiseLineResponse").getJSONArray("ProductAvailabilityResponse");
+                jsonObject = XML.toJSONObject(response.toString()).getJSONObject("CruiseLineResponse");
+                if( jsonObject.has("MessageHeader") ) {
+                    JSONObject tempObject = jsonObject.getJSONObject("MessageHeader");
+                    if( tempObject.getString("MessageId").equals("CCMSGERR") ) {
+                        tempObject = tempObject.getJSONObject("Advisory");
+                        String advisoryText = tempObject.getString("CruiseLineAdvisoryText");
+                        String errorText = tempObject.getString("Text");
+                        String errorCode = tempObject.get("Code").toString();
+                        logger.error("AdvisoryText: {}, Code: {}, Text: {}.", advisoryText, errorCode, errorText);
+                        Thread.sleep(30000);
+                        continue;
+                    }
+                }
+                jsonArray = jsonObject.getJSONArray("ProductAvailabilityResponse");
             } catch (Exception e) {
                 logger.error("Error occured while http web posting.", e);
                 throw e;
@@ -107,6 +122,7 @@ public class ProductSyncManager {
                 product.setCruiseLineCode("PCL");
                 product.setLastUpdateDate(new Date());
                 productRepository.save(product);
+                categorySyncManager.startSync(product);
             }
             calendar.setTime(date);
             calendar.add(Calendar.DATE, 1);

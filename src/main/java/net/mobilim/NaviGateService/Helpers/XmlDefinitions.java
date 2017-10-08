@@ -46,15 +46,16 @@ public class XmlDefinitions {
                     "  <CategoryAvailabilityRequest SegmentId=\"CCCATAV1\">\n" +
                     "    <SailingId>%s</SailingId>\n" +
                     "    <SailDate>%s</SailDate>\n" +
-                    "    <Ship Code=\"%s\" />\n" +
-/*                    "    <City Code=\"%s\" />\n" +
+/*                    "    <Ship Code=\"%s\" />\n" +
+                    "    <City Code=\"%s\" />\n" +
                     "    <Currency Code=\"EUR\" />\n" +*/
                     "    <Transportation Type=\"O\" />\n" +
                     "    <Rate Code=\"BNN\" />\n" +
-                    "    <NumberOfGuests>2</NumberOfGuests>\n" +
+                    //"    <NumberOfGuests>2</NumberOfGuests>\n" +
                     "    <VoyageLimits>Y</VoyageLimits>\n" +
-                    "    <Guest SeqNumber=\"1\" AgeCode=\"A\"/>\n" +
-                    "    <Guest SeqNumber=\"2\" AgeCode=\"A\"/>\n" +
+                    "      %s\n" +
+                    //"    <Guest SeqNumber=\"1\" AgeCode=\"A\"/>\n" +
+                    //"    <Guest SeqNumber=\"2\" AgeCode=\"A\"/>\n" +
                     "    <IncludeGroupsInd>Y</IncludeGroupsInd>\n" +
                     "  </CategoryAvailabilityRequest>\n" +
                     "</CruiseLineRequest>";

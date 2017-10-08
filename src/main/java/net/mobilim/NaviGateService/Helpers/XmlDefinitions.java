@@ -47,10 +47,10 @@ public class XmlDefinitions {
                     "    <SailingId>%s</SailingId>\n" +
                     "    <SailDate>%s</SailDate>\n" +
                     "    <Ship Code=\"%s\" />\n" +
-                    "    <City Code=\"%s\" />\n" +
-                    "    <Currency Code=\"EUR\" />\n" +
+/*                    "    <City Code=\"%s\" />\n" +
+                    "    <Currency Code=\"EUR\" />\n" +*/
                     "    <Transportation Type=\"O\" />\n" +
-                    "    <Rate Code=\"%s\" />\n" +
+                    "    <Rate Code=\"BNN\" />\n" +
                     "    <NumberOfGuests>2</NumberOfGuests>\n" +
                     "    <VoyageLimits>Y</VoyageLimits>\n" +
                     "    <Guest SeqNumber=\"1\" AgeCode=\"A\"/>\n" +

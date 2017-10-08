@@ -18,6 +18,8 @@
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" name="NaviGateData-1.0-SNAPSHOT" level="project" />
+    <orderEntry type="library" name="Maven: org.testng:testng:6.11" level="project" />
+    <orderEntry type="library" name="Maven: com.beust:jcommander:1.64" level="project" />
     <orderEntry type="library" name="Maven: org.springframework.boot:spring-boot-starter:1.5.6.RELEASE" level="project" />
     <orderEntry type="library" name="Maven: org.springframework.boot:spring-boot:1.5.6.RELEASE" level="project" />
     <orderEntry type="library" name="Maven: org.springframework:spring-context:4.3.10.RELEASE" level="project" />
@@ -29,7 +31,7 @@
     <orderEntry type="library" name="Maven: org.slf4j:jcl-over-slf4j:1.7.25" level="project" />
     <orderEntry type="library" name="Maven: org.slf4j:jul-to-slf4j:1.7.25" level="project" />
     <orderEntry type="library" name="Maven: org.springframework:spring-core:4.3.10.RELEASE" level="project" />
-    <orderEntry type="library" name="Maven: org.yaml:snakeyaml:1.17" level="project" />
+    <orderEntry type="library" scope="RUNTIME" name="Maven: org.yaml:snakeyaml:1.17" level="project" />
     <orderEntry type="library" name="Maven: org.springframework.boot:spring-boot-starter-data-jpa:1.5.6.RELEASE" level="project" />
     <orderEntry type="library" name="Maven: org.springframework.boot:spring-boot-starter-aop:1.5.6.RELEASE" level="project" />
     <orderEntry type="library" name="Maven: org.springframework:spring-aop:4.3.10.RELEASE" level="project" />
@@ -77,7 +79,5 @@
     <orderEntry type="library" scope="TEST" name="Maven: org.springframework:spring-test:4.3.10.RELEASE" level="project" />
     <orderEntry type="library" scope="TEST" name="Maven: org.mockito:mockito-all:1.9.5" level="project" />
     <orderEntry type="library" scope="TEST" name="Maven: org.hsqldb:hsqldb:2.3.5" level="project" />
-    <orderEntry type="library" name="Maven: org.testng:testng:6.11" level="project" />
-    <orderEntry type="library" name="Maven: com.beust:jcommander:1.64" level="project" />
   </component>
 </module>

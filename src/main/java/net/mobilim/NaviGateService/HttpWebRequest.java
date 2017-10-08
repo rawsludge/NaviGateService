@@ -27,22 +27,22 @@ public class HttpWebRequest {
         logger.info("Begin post");
         URL url = new URL(_url);
         logger.debug("Url is {}", _url);
-        HttpsURLConnection con = (HttpsURLConnection) url.openConnection();
-        con.setRequestMethod("POST");
-        con.setRequestProperty("User-Agent", USER_AGENT);
-        con.setDoOutput(true);
+        HttpsURLConnection httpsURLConnection = (HttpsURLConnection) url.openConnection();
+        httpsURLConnection.setRequestMethod("POST");
+        httpsURLConnection.setRequestProperty("User-Agent", USER_AGENT);
+        httpsURLConnection.setDoOutput(true);
         if( postData!= null && !postData.isEmpty() ) {
-            DataOutputStream wr = new DataOutputStream(con.getOutputStream());
-            wr.writeBytes(postData);
-            wr.flush();
-            wr.close();
+            DataOutputStream dataOutputStream = new DataOutputStream(httpsURLConnection.getOutputStream());
+            dataOutputStream.writeBytes(postData);
+            dataOutputStream.flush();
+            dataOutputStream.close();
         }
-        int responseCode = con.getResponseCode();
+        int responseCode = httpsURLConnection.getResponseCode();
         logger.debug("Http request response code is {}", responseCode);
         if( OK != responseCode) {
             throw  new Exception(String.format("Web site response error. Response: %d", responseCode));
         }
-        BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()));
+        BufferedReader in = new BufferedReader(new InputStreamReader(httpsURLConnection.getInputStream()));
         String inputLine;
         StringBuffer response = new StringBuffer();
 

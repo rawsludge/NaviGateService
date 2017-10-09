@@ -46,9 +46,9 @@ public class XmlDefinitions {
                     "  <CategoryAvailabilityRequest SegmentId=\"CCCATAV1\">\n" +
                     "    <SailingId>%s</SailingId>\n" +
                     "    <SailDate>%s</SailDate>\n" +
-/*                    "    <Ship Code=\"%s\" />\n" +
-                    "    <City Code=\"%s\" />\n" +
-                    "    <Currency Code=\"EUR\" />\n" +*/
+                    "    <City Code=\"IST\" />\n" +
+                    "    <Currency Code=\"EUR\" />\n" +
+                    "    <Ship Code=\"%s\" />\n" +
                     "    <Transportation Type=\"O\" />\n" +
                     "    <Rate Code=\"BNN\" />\n" +
                     //"    <NumberOfGuests>2</NumberOfGuests>\n" +

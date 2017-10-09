@@ -32,7 +32,7 @@ public class ProductSyncManager {
     private ShipRepository shipRepository = null;
     private DestinationRepository destinationRepository = null;
     private final SimpleDateFormat dateFormatter = new SimpleDateFormat("MMddyyyy");
-    private final Logger logger = LoggerFactory.getLogger(ServiceApp.class);
+    private final Logger logger = LoggerFactory.getLogger(ProductSyncManager.class);
     private final Integer MAX_YEAR = 5;
 
 

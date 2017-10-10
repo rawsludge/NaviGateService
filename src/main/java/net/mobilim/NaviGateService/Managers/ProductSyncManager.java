@@ -121,8 +121,8 @@ public class ProductSyncManager {
                 product.setSailingID(sailingID);
                 product.setCruiseLineCode("PCL");
                 product.setLastUpdateDate(new Date());
-                productRepository.save(product);
                 categorySyncManager.startSync(product);
+                productRepository.save(product);
             }
             calendar.setTime(date);
             calendar.add(Calendar.DATE, 1);

@@ -1,5 +1,8 @@
 package net.mobilim.NaviGateService.Managers;
 
+import net.mobilim.NaviGateData.Entities.CabinDeck;
+import net.mobilim.NaviGateData.Entities.CabinLocation;
+import net.mobilim.NaviGateData.Entities.Category;
 import net.mobilim.NaviGateData.Entities.Product;
 import net.mobilim.NaviGateService.Helpers.XmlDefinitions;
 import net.mobilim.NaviGateService.HttpWebRequest;
@@ -59,7 +62,30 @@ public class CategorySyncManager {
             if( object instanceof JSONArray) {
                 JSONArray jsonArray = (JSONArray)object;
                 for (Object item : jsonArray ) {
+                    jsonObject = (JSONObject)item;
+                    Category category = new Category();
+                    category.setCabinStatus(jsonObject.getJSONObject("Status").getString("Code"));
+                    category.setCabinType(jsonObject.getString("CabinType"));
+                    category.setCabinSubTypeDesc(jsonObject.getString("CabinSubTypeDescription"));
+                    category.setCabinSubType(jsonObject.get("CabinSubType").toString());
+                    category.setCode(jsonObject.get("Code").toString());
+                    category.setName(jsonObject.get("Name").toString());
 
+                    CabinLocation cabinLocation = new CabinLocation();
+                    cabinLocation.setCode(jsonObject.getJSONObject("CabinLocation").getString("Code"));
+                    cabinLocation.setName(jsonObject.getJSONObject("CabinLocation").getString("Description"));
+                    category.setCabinLocation(cabinLocation);
+
+                    Object decks = jsonObject.get("Deck");
+                    if( decks instanceof JSONArray) {
+                        for (Object deck : (JSONArray)decks ) {
+                            JSONObject jsonDeck = (JSONObject)deck;
+                            CabinDeck cabinDeck = new CabinDeck();
+                            cabinDeck.setCode(jsonDeck.get("Code").toString());
+                            cabinDeck.setCode(jsonDeck.get("Name").toString());
+                            category.getCabinDeck().add(cabinDeck);
+                        }
+                    }
                     logger.info(item.toString());
                 }
             }

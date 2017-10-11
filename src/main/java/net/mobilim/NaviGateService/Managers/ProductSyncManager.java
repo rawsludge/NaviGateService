@@ -19,6 +19,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -85,44 +86,7 @@ public class ProductSyncManager {
             }
             for (Object item : jsonArray) {
                 if (!(item instanceof JSONObject)) continue;
-
-                jsonObject = (JSONObject) item;
-                logger.info(item.toString());
-                Destination destination = prepateDestionation(jsonObject.getJSONObject("Destination"));
-                Port embarkPort = preparePort(jsonObject.getJSONObject("EmbarkPort"));
-                Port debarkPort = preparePort(jsonObject.getJSONObject("DebarkPort"));
-                JSONObject tempJsonObject = jsonObject.getJSONObject("Sailing");
-                Ship ship = prepareShip(tempJsonObject.getJSONObject("Ship"));
-
-                Integer duration = tempJsonObject.getInt("DurationDays");
-                Date sailingDate;
-                try {
-                    sailingDate = dateFormatter.parse(tempJsonObject.get("Date").toString());
-                    date = sailingDate;
-                } catch (ParseException e) {
-                    logger.error("Error occured while Date field parsing.", e);
-                    throw e;
-                }
-
-                String sailingID = jsonObject.get("SailingId").toString();
-                Integer maxOccupancy = jsonObject.getInt("MaxOccupancy");
-
-                Product product = productRepository.findBySailingID(sailingID);
-                if (product == null) {
-                    product = new Product();
-                }
-                product.setDestination(destination);
-                product.setEmbarkPort(embarkPort);
-                product.setShip(ship);
-                product.setDuration(duration);
-                product.setSailingDate(sailingDate);
-                product.setMaxOccupancy(maxOccupancy);
-                product.setDebarkPort(debarkPort);
-                product.setSailingID(sailingID);
-                product.setCruiseLineCode("PCL");
-                product.setLastUpdateDate(new Date());
-                categorySyncManager.startSync(product);
-                productRepository.save(product);
+                saveOrUpdateProduct( (JSONObject)item );
             }
             calendar.setTime(date);
             calendar.add(Calendar.DATE, 1);
@@ -132,21 +96,63 @@ public class ProductSyncManager {
         }
     }
 
-    private Destination prepateDestionation(JSONObject jsonObject) {
+    @Transactional(rollbackFor = {Exception.class})
+    Date saveOrUpdateProduct(JSONObject jsonObject) throws Exception {
+        Date date ;
+        Destination destination = prepateDestionation(jsonObject.getJSONObject("Destination"));
+        Port embarkPort = preparePort(jsonObject.getJSONObject("EmbarkPort"));
+        Port debarkPort = preparePort(jsonObject.getJSONObject("DebarkPort"));
+        JSONObject tempJsonObject = jsonObject.getJSONObject("Sailing");
+        Ship ship = prepareShip(tempJsonObject.getJSONObject("Ship"));
+
+        Integer duration = tempJsonObject.getInt("DurationDays");
+        Date sailingDate;
+        try {
+            sailingDate = dateFormatter.parse(tempJsonObject.get("Date").toString());
+            date = sailingDate;
+        } catch (ParseException e) {
+            logger.error("Error occured while Date field parsing.", e);
+            throw e;
+        }
+
+        String sailingID = jsonObject.get("SailingId").toString();
+        Integer maxOccupancy = jsonObject.getInt("MaxOccupancy");
+
+        Product product = productRepository.findBySailingID(sailingID);
+        if (product == null) {
+            product = new Product();
+        }
+        product.setDestination(destination);
+        product.setEmbarkPort(embarkPort);
+        product.setShip(ship);
+        product.setDuration(duration);
+        product.setSailingDate(sailingDate);
+        product.setMaxOccupancy(maxOccupancy);
+        product.setDebarkPort(debarkPort);
+        product.setSailingID(sailingID);
+        product.setCruiseLineCode("PCL");
+        product.setLastUpdateDate(new Date());
+        categorySyncManager.startSync(product);
+        productRepository.save(product);
+
+        return date;
+    }
+
+    Destination prepateDestionation(JSONObject jsonObject) {
         String code = jsonObject.getString("Code");
         String name = jsonObject.getString("Name");
         Destination destination = destinationRepository.checkAndSave(code, name);
         return destination;
     }
 
-    private Port preparePort(JSONObject jsonObject) {
+    Port preparePort(JSONObject jsonObject) {
         String code = jsonObject.getString("Code");
         String name = jsonObject.getString("Name");
         Port port = portRepository.checkAndSave(code, name);
         return port;
     }
 
-    private Ship prepareShip(JSONObject jsonObject) {
+    Ship prepareShip(JSONObject jsonObject) {
         String code = jsonObject.getString("Code");
         String name = jsonObject.getString("Name");
         Ship ship = shipRepository.checkAndSave(code, name);

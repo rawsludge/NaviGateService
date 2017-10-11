@@ -1,9 +1,6 @@
 package net.mobilim.NaviGateService.Managers;
 
-import net.mobilim.NaviGateData.Entities.CabinDeck;
-import net.mobilim.NaviGateData.Entities.CabinLocation;
-import net.mobilim.NaviGateData.Entities.Category;
-import net.mobilim.NaviGateData.Entities.Product;
+import net.mobilim.NaviGateData.Entities.*;
 import net.mobilim.NaviGateData.Repositories.CabinDeckRepository;
 import net.mobilim.NaviGateData.Repositories.CabinLocationRepository;
 import net.mobilim.NaviGateService.Helpers.XmlDefinitions;
@@ -16,6 +13,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import javax.swing.*;
 import java.io.InvalidObjectException;
@@ -41,6 +39,7 @@ public class CategorySyncManager {
 
     }
 
+    @Transactional(rollbackFor = {Exception.class})
     public void startSync(Product product) throws Exception {
 
         String guestData = "";
@@ -85,12 +84,14 @@ public class CategorySyncManager {
                     category.setProduct(product);
 
                     String code = jsonObject.getJSONObject("CabinLocation").getString("Code");
+
                     CabinLocation cabinLocation = cabinLocationRepository.findByCode(code);
                     if( cabinLocation == null)
                         cabinLocation = new CabinLocation();
                     cabinLocation.setCode(code);
                     cabinLocation.setName(jsonObject.getJSONObject("CabinLocation").getString("Description"));
                     cabinLocation.setLastUpdateDate(new Date());
+                    cabinLocationRepository.save(cabinLocation);
 
                     category.setCabinLocation(cabinLocation);
 
@@ -103,9 +104,14 @@ public class CategorySyncManager {
                             if(cabinDeck == null)
                                 cabinDeck = new CabinDeck();
                             cabinDeck.setCode(code);
-                            cabinDeck.setCode(jsonDeck.get("Name").toString());
+                            cabinDeck.setName(jsonDeck.get("Name").toString());
                             cabinDeck.setLastUpdateDate(new Date());
-                            category.getCabinDeck().add(cabinDeck);
+                            cabinDeckRepository.save(cabinDeck);
+
+                            CategoryCabinDeck categoryCabinDeck = new CategoryCabinDeck();
+                            categoryCabinDeck.setCabinDeck(cabinDeck);
+                            categoryCabinDeck.setCategory(category);
+                            category.getCategoryCabinDecks().add(categoryCabinDeck);
                         }
                     }
                     product.getCategories().add(category);
@@ -113,7 +119,7 @@ public class CategorySyncManager {
             }
         }
         catch (Exception ex) {
-            logger.error("", ex);
+            throw ex;
         }
     }
     private Object findObjectByPath(JSONObject jsonObject, String path) throws Exception{

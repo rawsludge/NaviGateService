@@ -1,6 +1,7 @@
 package net.mobilim.NaviGateService;
 
 
+import net.mobilim.NaviGateService.Config.ApplicationConfig;
 import net.mobilim.NaviGateService.Managers.ProductSyncManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

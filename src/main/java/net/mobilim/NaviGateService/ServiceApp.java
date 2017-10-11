@@ -1,7 +1,6 @@
 package net.mobilim.NaviGateService;
 
 
-import net.mobilim.NaviGateService.Config.ApplicationConfig;
 import net.mobilim.NaviGateService.Managers.ProductSyncManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,11 +11,13 @@ import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
+import org.springframework.transaction.annotation.EnableTransactionManagement;
 
 @SpringBootApplication
+@EnableTransactionManagement
 @ComponentScan("net.mobilim.NaviGateService")
-@EnableJpaRepositories("net.mobilim.NaviGateData.Repositories")
 @EntityScan("net.mobilim.NaviGateData.Entities")
+@EnableJpaRepositories("net.mobilim.NaviGateData.Repositories")
 public class ServiceApp {
     private final Logger logger = LoggerFactory.getLogger(ServiceApp.class);
     private static ConfigurableApplicationContext context;

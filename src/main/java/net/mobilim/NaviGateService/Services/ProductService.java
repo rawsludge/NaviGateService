@@ -1,46 +1,106 @@
-package net.mobilim.NaviGateService.Managers;
+package net.mobilim.NaviGateService.Services;
 
 import net.mobilim.NaviGateData.Entities.*;
-import net.mobilim.NaviGateData.Repositories.CabinDeckRepository;
-import net.mobilim.NaviGateData.Repositories.CabinLocationRepository;
+import net.mobilim.NaviGateData.Repositories.*;
 import net.mobilim.NaviGateService.Helpers.XmlDefinitions;
-import net.mobilim.NaviGateService.HttpWebRequest;
+import net.mobilim.NaviGateService.Managers.DownloadManager;
+import net.mobilim.NaviGateService.Managers.ProductSyncManager;
 import org.json.JSONArray;
 import org.json.JSONObject;
-import org.json.XML;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-import javax.swing.*;
 import java.io.InvalidObjectException;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
 @Component
-public class CategorySyncManager {
+@Transactional(rollbackFor = {Exception.class})
+public class ProductService {
     private final SimpleDateFormat dateFormatter = new SimpleDateFormat("MMddyyyy");
-    private final Logger logger = LoggerFactory.getLogger(CategorySyncManager.class);
+    private final Logger logger = LoggerFactory.getLogger(ProductSyncManager.class);
 
     @Autowired
-    private HttpWebRequest httpWebRequest;
-
+    private DownloadManager downloadManager;
+    @Autowired
+    private ProductRepository productRepository;
+    @Autowired
+    private DestinationRepository destinationRepository;
+    @Autowired
+    private PortRepository portRepository;
+    @Autowired
+    private ShipRepository shipRepository;
+    @Autowired
+    private CabinLocationRepository cabinLocationRepository;
     @Autowired
     private CabinDeckRepository cabinDeckRepository;
 
-    @Autowired
-    private CabinLocationRepository cabinLocationRepository;
+    public Date saveOrUpdateProduct(JSONObject jsonObject) throws Exception {
+        Date date ;
+        Destination destination = prepateDestionation(jsonObject.getJSONObject("Destination"));
+        Port embarkPort = preparePort(jsonObject.getJSONObject("EmbarkPort"));
+        Port debarkPort = preparePort(jsonObject.getJSONObject("DebarkPort"));
+        JSONObject tempJsonObject = jsonObject.getJSONObject("Sailing");
+        Ship ship = prepareShip(tempJsonObject.getJSONObject("Ship"));
 
+        Integer duration = tempJsonObject.getInt("DurationDays");
+        Date sailingDate;
+        try {
+            sailingDate = dateFormatter.parse(tempJsonObject.get("Date").toString());
+            date = sailingDate;
+        } catch (ParseException e) {
+            logger.error("Error occured while Date field parsing.", e);
+            throw e;
+        }
 
-    public CategorySyncManager() {
+        String sailingID = jsonObject.get("SailingId").toString();
+        Integer maxOccupancy = jsonObject.getInt("MaxOccupancy");
 
+        Product product = productRepository.findBySailingID(sailingID);
+        if (product == null) {
+            product = new Product();
+        }
+        product.setDestination(destination);
+        product.setEmbarkPort(embarkPort);
+        product.setShip(ship);
+        product.setDuration(duration);
+        product.setSailingDate(sailingDate);
+        product.setMaxOccupancy(maxOccupancy);
+        product.setDebarkPort(debarkPort);
+        product.setSailingID(sailingID);
+        product.setCruiseLineCode("PCL");
+        product.setLastUpdateDate(new Date());
+        startDetailSync(product);
+        productRepository.save(product);
+        return date;
     }
 
-    @Transactional(rollbackFor = {Exception.class})
-    public void startSync(Product product) throws Exception {
+    private Destination prepateDestionation(JSONObject jsonObject) {
+        String code = jsonObject.getString("Code");
+        String name = jsonObject.getString("Name");
+        Destination destination = destinationRepository.checkAndSave(code, name);
+        return destination;
+    }
+
+    private Port preparePort(JSONObject jsonObject) {
+        String code = jsonObject.getString("Code");
+        String name = jsonObject.getString("Name");
+        Port port = portRepository.checkAndSave(code, name);
+        return port;
+    }
+
+    private Ship prepareShip(JSONObject jsonObject) {
+        String code = jsonObject.getString("Code");
+        String name = jsonObject.getString("Name");
+        Ship ship = shipRepository.checkAndSave(code, name);
+        return ship;
+    }
+
+    private void startDetailSync(Product product) throws Exception {
 
         String guestData = "";
         String response;
@@ -53,20 +113,11 @@ public class CategorySyncManager {
         String xmlPostData = String.format(XmlDefinitions.CATEGORY, product.getSailingID(),
                 sailingDate, product.getShip().getCode(), String.format(
                         "<NumberOfGuests>%d</NumberOfGuests>%s", product.getMaxOccupancy(), guestData));
+
+
         try {
-            response = httpWebRequest.Post(xmlPostData);
-            jsonObject = XML.toJSONObject(response.toString()).getJSONObject("CruiseLineResponse");
-            if( jsonObject.has("MessageHeader") ) {
-                JSONObject tempObject = jsonObject.getJSONObject("MessageHeader");
-                if (tempObject.getString("MessageId").equals("CCMSGERR")) {
-                    tempObject = tempObject.getJSONObject("Advisory");
-                    String advisoryText = tempObject.getString("CruiseLineAdvisoryText");
-                    String errorText = tempObject.getString("Text");
-                    String errorCode = tempObject.get("Code").toString();
-                    logger.error("AdvisoryText: {}, Code: {}, Text: {}.", advisoryText, errorCode, errorText);
-                    throw  new Exception(advisoryText);
-                }
-            }
+
+            jsonObject = downloadManager.download(xmlPostData);
             Object object = findObjectByPath(jsonObject, "CategoryAvailabilityResponse/Category/");
             if( object instanceof JSONArray) {
                 JSONArray jsonArray = (JSONArray)object;

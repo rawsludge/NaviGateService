@@ -4,11 +4,10 @@ import net.mobilim.NaviGateData.Entities.*;
 import net.mobilim.NaviGateData.Repositories.*;
 import net.mobilim.NaviGateService.Helpers.XmlDefinitions;
 import net.mobilim.NaviGateService.Managers.DownloadManager;
-import net.mobilim.NaviGateService.Managers.ProductSyncManager;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.json.JSONArray;
 import org.json.JSONObject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,7 +21,7 @@ import java.util.Date;
 @Transactional(rollbackFor = {Exception.class})
 public class ProductService {
     private final SimpleDateFormat dateFormatter = new SimpleDateFormat("MMddyyyy");
-    private final Logger logger = LoggerFactory.getLogger(ProductSyncManager.class);
+    private final Logger logger = LogManager.getLogger(ProductService.class);
 
     @Autowired
     private DownloadManager downloadManager;
@@ -47,7 +46,7 @@ public class ProductService {
 
     public Date saveOrUpdateProduct(JSONObject jsonObject) throws Exception {
         Date date ;
-        Destination destination = prepateDestionation(jsonObject.getJSONObject("Destination"));
+        Destination destination = prepareDestination(jsonObject.getJSONObject("Destination"));
         Port embarkPort = preparePort(jsonObject.getJSONObject("EmbarkPort"));
         Port debarkPort = preparePort(jsonObject.getJSONObject("DebarkPort"));
         JSONObject tempJsonObject = jsonObject.getJSONObject("Sailing");
@@ -85,7 +84,7 @@ public class ProductService {
         return date;
     }
 
-    private Destination prepateDestionation(JSONObject jsonObject) {
+    private Destination prepareDestination(JSONObject jsonObject) {
         String code = jsonObject.getString("Code");
         String name = jsonObject.getString("Name");
         Destination destination = destinationRepository.checkAndSave(code, name);
@@ -109,7 +108,6 @@ public class ProductService {
     private void startDetailSync(Product product) throws Exception {
 
         String guestData = "";
-        String response;
         JSONObject jsonObject;
 
         for (int index=0; index < product.getMaxOccupancy(); index++) {
@@ -125,7 +123,7 @@ public class ProductService {
             Object object = findObjectByPath(jsonObject, "CategoryAvailabilityResponse/Category/");
             if( object instanceof JSONArray) {
                 JSONArray jsonArray = (JSONArray)object;
-                logger.info(jsonArray.toString());
+                //logger.info(jsonArray.toString());
                 for (Object item : jsonArray ) {
                     jsonObject = (JSONObject)item;
 
@@ -161,10 +159,9 @@ public class ProductService {
                         Object guestTypes = jsonObject.get("GuestType");
                         if (guestTypes instanceof JSONArray) {
                             for (Object guestObject : (JSONArray) guestTypes) {
+
                                 JSONObject guestTypeJSON = (JSONObject) guestObject;
                                 GuestType guestType;
-//                                guestType = guestTypeRepository.findByCategory(category);
-                                //if( guestType == null)
                                 guestType = new GuestType();
                                 guestType.setCategory(category);
                                 code = guestTypeJSON.get("Code").toString();
@@ -172,25 +169,23 @@ public class ProductService {
                                 guestType.setDescription(guestTypeJSON.getString("Description"));
                                 guestType.setStatusCode(guestTypeJSON.getJSONObject("Status").getString("Code"));
                                 guestType.setLastUpdateDate(new Date());
-                                //guestTypeRepository.save(guestType);
 
-                                JSONObject transportaionJSON = guestTypeJSON.getJSONObject("Transportation");
+                                JSONObject transportationJSON = guestTypeJSON.getJSONObject("Transportation");
                                 Transportation transportation;
-                                //transportation = transportationRepository.getAllByGuestType(guestType);
-                                //if(transportation == null)
-                                    transportation = new Transportation();
-                                transportation.setStatusCode(transportaionJSON.getJSONObject("Status").getString("Code"));
-                                transportation.setAmount(transportaionJSON.getBigDecimal("Amount"));
-                                transportation.setDescription(transportaionJSON.getString("Description"));
-                                transportation.setGuestMin(transportaionJSON.getJSONObject("Guests").getInt("Minimum"));
-                                transportation.setGuestMax(transportaionJSON.getJSONObject("Guests").getInt("Maximum"));
-                                transportation.setRateCode(transportaionJSON.getJSONObject("Rate").getString("Code"));
-                                transportation.setRateName(transportaionJSON.getJSONObject("Rate").getString("Name"));
-                                transportation.setRateType(transportaionJSON.getJSONObject("Rate").getString("Type"));
-                                transportation.setRatePortCharge(transportaionJSON.getJSONObject("Rate").getString("PortCharge"));
-                                transportation.setTaxFreeAmount(transportaionJSON.getBigDecimal("TaxFeeAmount"));
+                                transportation = new Transportation();
+                                transportation.setStatusCode(transportationJSON.getJSONObject("Status").getString("Code"));
+                                transportation.setAmount(transportationJSON.getBigDecimal("Amount"));
+                                transportation.setDescription(transportationJSON.getString("Description"));
+                                transportation.setGuestMin(transportationJSON.getJSONObject("Guests").getInt("Minimum"));
+                                transportation.setGuestMax(transportationJSON.getJSONObject("Guests").getInt("Maximum"));
+                                transportation.setRateCode(transportationJSON.getJSONObject("Rate").getString("Code"));
+                                transportation.setRateName(transportationJSON.getJSONObject("Rate").getString("Name"));
+                                transportation.setRateType(transportationJSON.getJSONObject("Rate").getString("Type"));
+                                transportation.setRatePortCharge(transportationJSON.getJSONObject("Rate").getString("PortCharge"));
+                                transportation.setTaxFreeAmount(transportationJSON.getBigDecimal("TaxFeeAmount"));
+                                transportation.setType(transportationJSON.getString("Type"));
                                 transportation.setLastUpdateDate(new Date());
-                                //transportationRepository.save(transportation);
+
                                 guestType.setTransportation(transportation);
                                 category.getGuestTypes().add(guestType);
                             }

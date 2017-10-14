@@ -21,29 +21,24 @@ public class DownloadManager {
         String response;
         JSONObject jsonObject;
 
-        try {
-            response = httpWebRequest.Post(postData);
-            jsonObject = XML.toJSONObject(response.toString()).getJSONObject("CruiseLineResponse");
-            if( jsonObject.has("MessageHeader") ) {
-                JSONObject tempObject = jsonObject.getJSONObject("MessageHeader");
-                if( tempObject.getString("MessageId").equals("CCMSGERR") ) {
-                    tempObject = tempObject.getJSONObject("Advisory");
+        response = httpWebRequest.Post(postData);
+        jsonObject = XML.toJSONObject(response.toString()).getJSONObject("CruiseLineResponse");
+        if( jsonObject.has("MessageHeader") ) {
+            JSONObject tempObject = jsonObject.getJSONObject("MessageHeader");
+            if( tempObject.getString("MessageId").equals("CCMSGERR") ) {
+                tempObject = tempObject.getJSONObject("Advisory");
 
-                    String errorText = tempObject.getString("Text");
-                    String errorCode = tempObject.get("Code").toString();
+                String errorText = tempObject.getString("Text");
+                String errorCode = tempObject.get("Code").toString();
 
-                    if( tempObject.has("CruiseLineAdvisoryText")) {
-                        String advisoryText = tempObject.getString("CruiseLineAdvisoryText");
-                        throw new InvalidApplicationException(String.format("Advice: %s, Code: %s, error: %s", advisoryText, errorCode, errorText));
-                    } else  {
-                        throw new AdvisoryException(errorCode, errorText);
-                    }
+                if( tempObject.has("CruiseLineAdvisoryText")) {
+                    String advisoryText = tempObject.getString("CruiseLineAdvisoryText");
+                    throw new InvalidApplicationException(String.format("Advice: %s, Code: %s, error: %s", advisoryText, errorCode, errorText));
+                } else  {
+                    throw new AdvisoryException(errorCode, errorText);
                 }
             }
-            return jsonObject;
-        } catch (Exception e) {
-            //logger.error("Error occured while http web posting.", e);
-            throw e;
         }
+        return jsonObject;
     }
 }

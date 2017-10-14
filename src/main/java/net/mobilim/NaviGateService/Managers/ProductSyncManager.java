@@ -4,13 +4,14 @@ package net.mobilim.NaviGateService.Managers;
 import net.mobilim.NaviGateService.Exceptions.AdvisoryException;
 import net.mobilim.NaviGateService.Helpers.XmlDefinitions;
 import net.mobilim.NaviGateService.Services.ProductService;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.json.JSONArray;
 import org.json.JSONObject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
+
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
@@ -19,7 +20,7 @@ import java.util.Date;
 public class ProductSyncManager {
 
     private final SimpleDateFormat dateFormatter = new SimpleDateFormat("MMddyyyy");
-    private final Logger logger = LoggerFactory.getLogger(ProductSyncManager.class);
+    private final Logger logger = LogManager.getLogger(ProductSyncManager.class);
     private final Integer MAX_YEAR = 5;
 
     @Autowired
@@ -28,12 +29,8 @@ public class ProductSyncManager {
     @Autowired
     private ApplicationContext appContext;
 
-    public ProductSyncManager() {
-    }
-
     public void startSync() throws Exception {
 
-        JSONArray jsonArray;
         Date date = new Date();
         String fromDate = dateFormatter.format(date);
 
@@ -43,34 +40,30 @@ public class ProductSyncManager {
         Date tillDate = calendar.getTime();
 
         while (date.compareTo(tillDate) < 0) {
-            try {
-
             String xmlPostData = String.format(XmlDefinitions.PRODUCT, fromDate, "", "5", "60", "", "");
+            logger.info("Begin product availability request. Begin date:{}", fromDate);
             JSONObject jsonObject = downloadManager.download(xmlPostData);
-            jsonArray = jsonObject.getJSONArray("ProductAvailabilityResponse");
-
-            for (Object item : jsonArray) {
-                if (!(item instanceof JSONObject)) continue;
-                if( ((JSONObject)item).getJSONObject("SailingStatus").getString("Code").equals("CL") ) continue;
-                logger.info(item.toString());
-                try {
-                    ProductService productService = appContext.getBean(ProductService.class);
-                    date = productService.saveOrUpdateProduct( (JSONObject)item );
-                }
-                catch (AdvisoryException ex) {
-                    logger.warn("", ex);
+            logger.info("End product availability request");
+            Object productAvailability = jsonObject.get("ProductAvailabilityResponse");
+            if( productAvailability instanceof JSONArray) {
+                logger.info("Product availability is array and size is {}", ((JSONArray)productAvailability).length());
+                Integer index = 0;
+                for (Object item : (JSONArray)productAvailability ) {
+                    if (!(item instanceof JSONObject)) continue;
+                    logger.info("{}. product details is being download.", index++);
+                    if (((JSONObject) item).getJSONObject("SailingStatus").getString("Code").equals("CL")) continue;
+                    try {
+                        ProductService productService = appContext.getBean(ProductService.class);
+                        date = productService.saveOrUpdateProduct((JSONObject) item);
+                    } catch (AdvisoryException ex) {
+                        logger.info("Advisory exception.", ex);
+                    }
                 }
             }
             calendar.setTime(date);
             calendar.add(Calendar.DATE, 1);
             date = calendar.getTime();
             fromDate = dateFormatter.format(date);
-            logger.info(String.format("from date:%s", fromDate));
-            }
-            catch (Exception ex) {
-                logger.error("", ex);
-                throw ex;
-            }
         }
     }
 }

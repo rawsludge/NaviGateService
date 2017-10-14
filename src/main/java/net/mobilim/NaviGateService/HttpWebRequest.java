@@ -1,8 +1,9 @@
 package net.mobilim.NaviGateService;
 
 
-import org.slf4j.LoggerFactory;
-import org.slf4j.Logger;
+import com.jcabi.aspects.Loggable;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -17,12 +18,13 @@ public class HttpWebRequest {
     private  final  String _url;
     private final String USER_AGENT = "Mozilla/5.0";
     private final int OK = 200;
-    private Logger logger = LoggerFactory.getLogger(HttpWebRequest.class);
+    private Logger logger = LogManager.getLogger(HttpWebRequest.class);
 
     public HttpWebRequest(@Value("${website.url}") String url) {
         _url = url;
     }
 
+    @Loggable(Loggable.DEBUG)
     public String Post(String postData) throws Exception {
         logger.info("Begin post");
         URL url = new URL(_url);
@@ -50,6 +52,7 @@ public class HttpWebRequest {
             response.append(inputLine);
         }
         in.close();
+        logger.info("End post");
         return  response.toString();
     }
 }

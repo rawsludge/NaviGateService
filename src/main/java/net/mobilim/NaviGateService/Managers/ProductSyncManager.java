@@ -51,10 +51,11 @@ public class ProductSyncManager {
 
             for (Object item : jsonArray) {
                 if (!(item instanceof JSONObject)) continue;
+                if( ((JSONObject)item).getJSONObject("SailingStatus").getString("Code").equals("CL") ) continue;
                 logger.info(item.toString());
                 try {
                     ProductService productService = appContext.getBean(ProductService.class);
-                    productService.saveOrUpdateProduct( (JSONObject)item );
+                    date = productService.saveOrUpdateProduct( (JSONObject)item );
                 }
                 catch (AdvisoryException ex) {
                     logger.warn("", ex);

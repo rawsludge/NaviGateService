@@ -38,6 +38,12 @@ public class ProductService {
     private CabinLocationRepository cabinLocationRepository;
     @Autowired
     private CabinDeckRepository cabinDeckRepository;
+    @Autowired
+    private CategoryRepository categoryRepository;
+    @Autowired
+    private GuestTypeRepository guestTypeRepository;
+    @Autowired
+    private TransportationRepository transportationRepository;
 
     public Date saveOrUpdateProduct(JSONObject jsonObject) throws Exception {
         Date date ;
@@ -113,8 +119,6 @@ public class ProductService {
         String xmlPostData = String.format(XmlDefinitions.CATEGORY, product.getSailingID(),
                 sailingDate, product.getShip().getCode(), String.format(
                         "<NumberOfGuests>%d</NumberOfGuests>%s", product.getMaxOccupancy(), guestData));
-
-
         try {
 
             jsonObject = downloadManager.download(xmlPostData);
@@ -125,13 +129,20 @@ public class ProductService {
                 for (Object item : jsonArray ) {
                     jsonObject = (JSONObject)item;
 
-                    Category category = new Category();
+
+                    Category category = null;
+                    if( product.getId() != 0) {
+                        category = categoryRepository.findByProduct(jsonObject.get("Code").toString(), product);
+                    }
+                    if( category == null)
+                        category = new Category();
                     category.setCabinStatus(jsonObject.getJSONObject("Status").getString("Code"));
                     category.setCabinType(jsonObject.getString("CabinType"));
                     category.setCabinSubTypeDesc(jsonObject.getString("CabinSubTypeDescription"));
                     category.setCabinSubType(jsonObject.get("CabinSubType").toString());
                     category.setCode(jsonObject.get("Code").toString());
                     category.setName(jsonObject.get("Name").toString());
+                    category.setLastUpdateDate(new Date());
                     category.setProduct(product);
 
                     String code = jsonObject.getJSONObject("CabinLocation").getString("Code");
@@ -145,6 +156,46 @@ public class ProductService {
                     cabinLocationRepository.save(cabinLocation);
 
                     category.setCabinLocation(cabinLocation);
+
+                    if( category.getGuestTypes().size() == 0) {
+                        Object guestTypes = jsonObject.get("GuestType");
+                        if (guestTypes instanceof JSONArray) {
+                            for (Object guestObject : (JSONArray) guestTypes) {
+                                JSONObject guestTypeJSON = (JSONObject) guestObject;
+                                GuestType guestType;
+//                                guestType = guestTypeRepository.findByCategory(category);
+                                //if( guestType == null)
+                                guestType = new GuestType();
+                                guestType.setCategory(category);
+                                code = guestTypeJSON.get("Code").toString();
+                                guestType.setCode(code);
+                                guestType.setDescription(guestTypeJSON.getString("Description"));
+                                guestType.setStatusCode(guestTypeJSON.getJSONObject("Status").getString("Code"));
+                                guestType.setLastUpdateDate(new Date());
+                                //guestTypeRepository.save(guestType);
+
+                                JSONObject transportaionJSON = guestTypeJSON.getJSONObject("Transportation");
+                                Transportation transportation;
+                                //transportation = transportationRepository.getAllByGuestType(guestType);
+                                //if(transportation == null)
+                                    transportation = new Transportation();
+                                transportation.setStatusCode(transportaionJSON.getJSONObject("Status").getString("Code"));
+                                transportation.setAmount(transportaionJSON.getBigDecimal("Amount"));
+                                transportation.setDescription(transportaionJSON.getString("Description"));
+                                transportation.setGuestMin(transportaionJSON.getJSONObject("Guests").getInt("Minimum"));
+                                transportation.setGuestMax(transportaionJSON.getJSONObject("Guests").getInt("Maximum"));
+                                transportation.setRateCode(transportaionJSON.getJSONObject("Rate").getString("Code"));
+                                transportation.setRateName(transportaionJSON.getJSONObject("Rate").getString("Name"));
+                                transportation.setRateType(transportaionJSON.getJSONObject("Rate").getString("Type"));
+                                transportation.setRatePortCharge(transportaionJSON.getJSONObject("Rate").getString("PortCharge"));
+                                transportation.setTaxFreeAmount(transportaionJSON.getBigDecimal("TaxFeeAmount"));
+                                transportation.setLastUpdateDate(new Date());
+                                //transportationRepository.save(transportation);
+                                guestType.setTransportation(transportation);
+                                category.getGuestTypes().add(guestType);
+                            }
+                        }
+                    }
 
                     Object decks = jsonObject.get("Deck");
                     if( decks instanceof JSONArray) {

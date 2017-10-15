@@ -2,21 +2,29 @@
 <Configuration status="WARN" monitorInterval="30">
     <Properties>
         <Property name="LOG_PATTERN">
-            %d{yyyy-MM-dd HH:mm:ss.SSS} %5p ${hostName} --- [%15.15t] %-40.40c{1.} : %m%n%ex
+            %d{yyyy-MM-dd HH:mm:ss.SSS} %5p - [%15.15t] %-40.40c{1.} : %m%n%ex
         </Property>
     </Properties>
     <Appenders>
         <Console name="ConsoleAppender" target="SYSTEM_OUT" follow="true">
             <PatternLayout pattern="${LOG_PATTERN}"/>
         </Console>
+        <File name="FileAppenderError" fileName="logs/service-error.log">
+            <PatternLayout pattern="${LOG_PATTERN}" />
+        </File>
+        <File name="FileAppenderAll" fileName="logs/service-all.log">
+            <PatternLayout pattern="${LOG_PATTERN}" />
+        </File>
     </Appenders>
     <Loggers>
-        <Logger name="net.mobilim.NaviGateService" level="debug" additivity="false">
-            <AppenderRef ref="ConsoleAppender" />
+        <Logger name="net.mobilim.NaviGateService" level="error" additivity="false">
+            <AppenderRef ref="FileAppenderError" />
         </Logger>
 
-        <Root level="info">
-            <AppenderRef ref="ConsoleAppender" />
+        <Root level="all">
+            <AppenderRef ref="ConsoleAppender" level="debug" />
+            <AppenderRef ref="FileAppenderAll" level="info" />
+            <AppenderRef ref="FileAppenderAll" level="debug" />
         </Root>
     </Loggers>
 </Configuration>

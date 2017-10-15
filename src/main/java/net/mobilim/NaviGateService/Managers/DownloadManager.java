@@ -1,5 +1,6 @@
 package net.mobilim.NaviGateService.Managers;
 
+import com.jcabi.aspects.Loggable;
 import net.mobilim.NaviGateService.Exceptions.AdvisoryException;
 import net.mobilim.NaviGateService.HttpWebRequest;
 import org.json.JSONObject;
@@ -17,6 +18,7 @@ public class DownloadManager {
     @Autowired
     private HttpWebRequest httpWebRequest;
 
+    @Loggable
     public JSONObject download(String postData) throws Exception {
         String response;
         JSONObject jsonObject;

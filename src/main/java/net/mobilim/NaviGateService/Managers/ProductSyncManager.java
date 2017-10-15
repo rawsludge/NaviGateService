@@ -1,6 +1,7 @@
 package net.mobilim.NaviGateService.Managers;
 
 
+import com.jcabi.aspects.Loggable;
 import net.mobilim.NaviGateService.Exceptions.AdvisoryException;
 import net.mobilim.NaviGateService.Helpers.XmlDefinitions;
 import net.mobilim.NaviGateService.Services.ProductService;
@@ -29,6 +30,7 @@ public class ProductSyncManager {
     @Autowired
     private ApplicationContext appContext;
 
+    @Loggable(Loggable.DEBUG)
     public void startSync() throws Exception {
 
         Date date = new Date();

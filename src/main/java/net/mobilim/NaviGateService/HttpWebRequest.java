@@ -1,7 +1,5 @@
 package net.mobilim.NaviGateService;
 
-
-import com.jcabi.aspects.Loggable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Value;
@@ -24,7 +22,6 @@ public class HttpWebRequest {
         _url = url;
     }
 
-    @Loggable(Loggable.DEBUG)
     public String Post(String postData) throws Exception {
         logger.info("Begin post");
         URL url = new URL(_url);

@@ -18,7 +18,7 @@ public class DownloadManager {
     @Autowired
     private HttpWebRequest httpWebRequest;
 
-    @Loggable
+    @Loggable(Loggable.DEBUG)
     public JSONObject download(String postData) throws Exception {
         String response;
         JSONObject jsonObject;

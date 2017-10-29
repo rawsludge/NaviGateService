@@ -41,11 +41,9 @@ public class ProductService {
     @Autowired
     private CategoryRepository categoryRepository;
     @Autowired
-    private GuestTypeRepository guestTypeRepository;
-    @Autowired
-    private TransportationRepository transportationRepository;
+    private ItineraryRepository itineraryRepository;
 
-    @Loggable
+    @Loggable(Loggable.DEBUG)
     public Date saveOrUpdateProduct(JSONObject jsonObject) throws Exception {
         Date date;
         Destination destination = prepareDestination(jsonObject.getJSONObject("Destination"));
@@ -53,6 +51,7 @@ public class ProductService {
         Port debarkPort = preparePort(jsonObject.getJSONObject("DebarkPort"));
         JSONObject tempJsonObject = jsonObject.getJSONObject("Sailing");
         Ship ship = prepareShip(tempJsonObject.getJSONObject("Ship"));
+        Itinerary itinerary = prepareItinerary(jsonObject.getJSONObject("Itinerary"));
 
         Integer duration = tempJsonObject.getInt("DurationDays");
         Date sailingDate;
@@ -81,6 +80,7 @@ public class ProductService {
         product.setSailingID(sailingID);
         product.setCruiseLineCode("PCL");
         product.setLastUpdateDate(new Date());
+        product.setItinerary(itinerary);
         startDetailSync(product);
         productRepository.save(product);
         return date;
@@ -108,6 +108,21 @@ public class ProductService {
         String name = jsonObject.getString("Name");
         Ship ship = shipRepository.checkAndSave(code, name);
         return ship;
+    }
+
+    @Loggable(Loggable.DEBUG)
+    private Itinerary prepareItinerary(JSONObject jsonObject) {
+        String code = jsonObject.getString("Code");
+        String name = jsonObject.getString("Description");
+        Integer portCount = jsonObject.getInt("PortCnt");
+        Itinerary itinerary = itineraryRepository.findByCode(code);
+        if (itinerary == null)
+            itinerary = new Itinerary();
+        itinerary.setCode(code);
+        itinerary.setName(name);
+        itinerary.setPortCount(portCount);
+        itineraryRepository.save(itinerary);
+        return itinerary;
     }
 
     @Loggable(Loggable.DEBUG)

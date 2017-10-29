@@ -69,7 +69,7 @@
         <dependency>
             <groupId>net.mobilim</groupId>
             <artifactId>NaviGateData</artifactId>
-            <version>1.0-SNAPSHOT</version>
+            <version>0.0.2-SNAPSHOT</version>
         </dependency>
         <!-- Use MySQL Connector-J -->
         <dependency>
@@ -100,7 +100,6 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
-
     <build>
         <plugins>
            <plugin>
@@ -115,30 +114,66 @@
                 </executions>
             </plugin>
             <plugin>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-maven-plugin</artifactId>
-                <version>1.5.7.RELEASE</version>
+                <!-- JAR Plugin to configure JAR generation. -->
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>3.0.2</version>
                 <executions>
                     <execution>
+                        <id>default-jar</id>
+                        <phase>package</phase>
                         <goals>
-                            <goal>repackage</goal>
+                            <goal>jar</goal>
                         </goals>
+                        <configuration>
+                            <excludes>
+                                <exclude>bin/**</exclude>
+                                <exclude>env/**</exclude>
+                                <exclude>distribution/**</exclude>
+                            </excludes>
+                            <archive>
+                                <manifest>
+                                    <addClasspath>true</addClasspath>
+                                    <classpathPrefix>../lib/</classpathPrefix>
+                                    <mainClass>net.mobilim.NaviGateService.ServiceApp</mainClass>
+                                    <useUniqueVersions>false</useUniqueVersions>
+                                </manifest>
+                                <manifestEntries>
+                                    <Class-Path>.</Class-Path>
+                                </manifestEntries>
+                            </archive>
+                            <outputDirectory>target</outputDirectory>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-jar-plugin</artifactId>
-                <version>3.0.2</version>
+                <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>
-                    <archive>
-                        <manifest>
-                            <addClasspath>true</addClasspath>
-                            <classpathPrefix>libs/</classpathPrefix>
-                            <mainClass>net.mobilim.NaviGateService.ServiceApp</mainClass>
-                        </manifest>
-                    </archive>
+                    <source>1.8</source>
+                    <target>1.8</target>
                 </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <version>3.0.0</version>
+                <configuration>
+                    <appendAssemblyId>false</appendAssemblyId>
+                    <descriptors>
+                        <descriptor>src/main/resources/distribution/navigate-service.xml</descriptor>
+                    </descriptors>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>make-assembly</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

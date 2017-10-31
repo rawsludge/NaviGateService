@@ -16,12 +16,14 @@ import org.springframework.transaction.annotation.Transactional;
 import java.io.InvalidObjectException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 
 @Component
 @Transactional(rollbackFor = {Exception.class})
 public class ProductService {
     private final SimpleDateFormat dateFormatter = new SimpleDateFormat("MMddyyyy");
+    private final SimpleDateFormat timeFormater = new SimpleDateFormat("HHmm");
     private final Logger logger = LogManager.getLogger(ProductService.class);
 
     @Autowired
@@ -43,15 +45,15 @@ public class ProductService {
     @Autowired
     private ItineraryRepository itineraryRepository;
 
-    @Loggable(Loggable.DEBUG)
+    @Loggable(Loggable.INFO)
     public Date saveOrUpdateProduct(JSONObject jsonObject) throws Exception {
         Date date;
         Destination destination = prepareDestination(jsonObject.getJSONObject("Destination"));
-        Port embarkPort = preparePort(jsonObject.getJSONObject("EmbarkPort"));
-        Port debarkPort = preparePort(jsonObject.getJSONObject("DebarkPort"));
+        //Port embarkPort = preparePort(jsonObject.getJSONObject("EmbarkPort"));
+        //Port debarkPort = preparePort(jsonObject.getJSONObject("DebarkPort"));
         JSONObject tempJsonObject = jsonObject.getJSONObject("Sailing");
         Ship ship = prepareShip(tempJsonObject.getJSONObject("Ship"));
-        Itinerary itinerary = prepareItinerary(jsonObject.getJSONObject("Itinerary"));
+        Itinerary itinerary = prepareItinerary(jsonObject);
 
         Integer duration = tempJsonObject.getInt("DurationDays");
         Date sailingDate;
@@ -71,12 +73,12 @@ public class ProductService {
             product = new Product();
         }
         product.setDestination(destination);
-        product.setEmbarkPort(embarkPort);
+        //product.setEmbarkPort(embarkPort);
         product.setShip(ship);
         product.setDuration(duration);
         product.setSailingDate(sailingDate);
         product.setMaxOccupancy(maxOccupancy);
-        product.setDebarkPort(debarkPort);
+        //product.setDebarkPort(debarkPort);
         product.setSailingID(sailingID);
         product.setCruiseLineCode("PCL");
         product.setLastUpdateDate(new Date());
@@ -86,7 +88,7 @@ public class ProductService {
         return date;
     }
 
-    @Loggable(Loggable.DEBUG)
+    @Loggable(Loggable.INFO)
     private Destination prepareDestination(JSONObject jsonObject) {
         String code = jsonObject.getString("Code");
         String name = jsonObject.getString("Name");
@@ -94,6 +96,7 @@ public class ProductService {
         return destination;
     }
 
+    /*
     @Loggable(Loggable.DEBUG)
     private Port preparePort(JSONObject jsonObject) {
         String code = jsonObject.getString("Code");
@@ -101,8 +104,9 @@ public class ProductService {
         Port port = portRepository.checkAndSave(code, name);
         return port;
     }
+    */
 
-    @Loggable(Loggable.DEBUG)
+    @Loggable(Loggable.INFO)
     private Ship prepareShip(JSONObject jsonObject) {
         String code = jsonObject.getString("Code");
         String name = jsonObject.getString("Name");
@@ -110,22 +114,99 @@ public class ProductService {
         return ship;
     }
 
-    @Loggable(Loggable.DEBUG)
+    @Loggable(Loggable.INFO)
     private Itinerary prepareItinerary(JSONObject jsonObject) {
+
+        String sailingId = jsonObject.get("SailingId").toString();
+
+        JSONObject sailingObject = jsonObject.getJSONObject("Sailing");
+        String sailingDate = sailingObject.get("Date").toString();
+        Integer duration = sailingObject.getInt("DurationDays");
+        String shipCode = sailingObject.getJSONObject("Ship").getString("Code");
+
+        JSONObject itineraryDeatil = null;
+
+        try {
+
+            String xmlPostData = String.format(XmlDefinitions.ITINERARY_DETAIL, sailingId, sailingDate, duration.toString(), shipCode);
+            logger.info("Begin itinerary detail download. Begin date:{}", sailingId);
+            itineraryDeatil = downloadManager.download(xmlPostData);
+            logger.info("End itinerary detail download. request");
+        }
+        catch (Exception ex) {
+            ex.printStackTrace();
+            return null;
+        }
+
+        jsonObject = jsonObject.getJSONObject("Itinerary");
+
         String code = jsonObject.getString("Code");
         String name = jsonObject.getString("Description");
         Integer portCount = jsonObject.getInt("PortCnt");
-        Itinerary itinerary = itineraryRepository.findByCode(code);
-        if (itinerary == null)
+
+        Itinerary itinerary; // = itineraryRepository.findByCode(code);
+        ///if (itinerary == null) {
             itinerary = new Itinerary();
+            itinerary.setPorts(new ArrayList<Port>());
+        //}
         itinerary.setCode(code);
         itinerary.setName(name);
         itinerary.setPortCount(portCount);
+
+        try {
+
+            Object itineraryPortsObject = findObjectByPath(itineraryDeatil, "ItineraryResponse/ItinInformation");
+            if (itineraryPortsObject instanceof JSONArray) {
+                for (Object item : (JSONArray) itineraryPortsObject) {
+                    JSONObject itiItem = (JSONObject)item;
+                    if( itiItem.getString("PortCode").isEmpty() ) continue;
+                    code = itiItem.getString("PortCode");
+                    Object nameObj = itiItem.get("PortName");
+                    if( nameObj instanceof JSONObject) {
+                        JSONObject nameJson = (JSONObject) nameObj;
+                        name = String.format("%s / %s", nameJson.getString("Pier"), nameJson.getString("content") );
+                    }
+                    else
+                        name = itiItem.getString("PortName");
+                    String date = itiItem.get("Date").toString();
+                    Port port = new Port(code, name);
+                    port.setDate(dateFormatter.parse(date));
+                    port.setItinerary(itinerary);
+                    Object portScheduleObj = itiItem.get("PortSchedule");
+                    if( portScheduleObj instanceof JSONArray) {
+                        for ( Object portObj : (JSONArray) portScheduleObj ){
+                            JSONObject portJson = (JSONObject)portObj;
+                            prepareScheduleParameters(port, portJson);
+                        }
+                    }
+                    else if( portScheduleObj instanceof JSONObject) {
+                        JSONObject portJson = (JSONObject)portScheduleObj;
+                        prepareScheduleParameters(port, portJson);
+                    }
+                    itinerary.getPorts().add(port);
+                }
+            }
+        }
+        catch (Exception ex) {
+            ex.printStackTrace();
+        }
         itineraryRepository.save(itinerary);
         return itinerary;
     }
 
-    @Loggable(Loggable.DEBUG)
+    private void prepareScheduleParameters(Port port, JSONObject portJson) throws ParseException {
+        String code;
+        code = portJson.getString("Code");
+        String time = portJson.get("Time").toString();
+        if( code.equals("AR"))
+            port.setArrive(timeFormater.parse(time));
+        if( code.equals("DP"))
+            port.setDepart(timeFormater.parse(time));
+        if(code.equals("BO"))
+            port.setBoarding(timeFormater.parse(time));
+    }
+
+    @Loggable(Loggable.INFO)
     private void startDetailSync(Product product) throws Exception {
 
         String guestData = "";
@@ -236,7 +317,7 @@ public class ProductService {
         }
     }
 
-    @Loggable(Loggable.DEBUG)
+    @Loggable(Loggable.INFO)
     private Object findObjectByPath(JSONObject jsonObject, String path) throws Exception {
         String[] objectNames = path.split("/");
         Object returnObject = jsonObject;

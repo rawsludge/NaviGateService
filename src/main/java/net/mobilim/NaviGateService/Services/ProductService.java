@@ -53,8 +53,6 @@ public class ProductService {
         //Port debarkPort = preparePort(jsonObject.getJSONObject("DebarkPort"));
         JSONObject tempJsonObject = jsonObject.getJSONObject("Sailing");
         Ship ship = prepareShip(tempJsonObject.getJSONObject("Ship"));
-        Itinerary itinerary = prepareItinerary(jsonObject);
-
         Integer duration = tempJsonObject.getInt("DurationDays");
         Date sailingDate;
         try {
@@ -71,6 +69,7 @@ public class ProductService {
         Product product = productRepository.findBySailingID(sailingID);
         if (product == null) {
             product = new Product();
+            product.setPorts(new ArrayList<Port>());
         }
         product.setDestination(destination);
         //product.setEmbarkPort(embarkPort);
@@ -82,7 +81,10 @@ public class ProductService {
         product.setSailingID(sailingID);
         product.setCruiseLineCode("PCL");
         product.setLastUpdateDate(new Date());
+
+        Itinerary itinerary = prepareItinerary( product, jsonObject);
         product.setItinerary(itinerary);
+
         startDetailSync(product);
         productRepository.save(product);
         return date;
@@ -115,7 +117,7 @@ public class ProductService {
     }
 
     @Loggable(Loggable.INFO)
-    private Itinerary prepareItinerary(JSONObject jsonObject) {
+    private Itinerary prepareItinerary(Product product, JSONObject jsonObject) {
 
         String sailingId = jsonObject.get("SailingId").toString();
 
@@ -144,11 +146,10 @@ public class ProductService {
         String name = jsonObject.getString("Description");
         Integer portCount = jsonObject.getInt("PortCnt");
 
-        Itinerary itinerary; // = itineraryRepository.findByCode(code);
-        ///if (itinerary == null) {
+        Itinerary itinerary = itineraryRepository.findByCode(code);
+        if (itinerary == null) {
             itinerary = new Itinerary();
-            itinerary.setPorts(new ArrayList<Port>());
-        //}
+        }
         itinerary.setCode(code);
         itinerary.setName(name);
         itinerary.setPortCount(portCount);
@@ -171,7 +172,7 @@ public class ProductService {
                     String date = itiItem.get("Date").toString();
                     Port port = new Port(code, name);
                     port.setDate(dateFormatter.parse(date));
-                    port.setItinerary(itinerary);
+                    port.setProduct(product);
                     Object portScheduleObj = itiItem.get("PortSchedule");
                     if( portScheduleObj instanceof JSONArray) {
                         for ( Object portObj : (JSONArray) portScheduleObj ){
@@ -183,7 +184,7 @@ public class ProductService {
                         JSONObject portJson = (JSONObject)portScheduleObj;
                         prepareScheduleParameters(port, portJson);
                     }
-                    itinerary.getPorts().add(port);
+                    product.getPorts().add(port);
                 }
             }
         }
